@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment variables - KHÔNG bao giờ commit file này
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+backend/src/test/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

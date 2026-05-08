@@ -1,0 +1,37 @@
+services:
+  lms-api:
+    image: ghcr.io/kacode357/study-schedule-lms:latest
+    container_name: lms-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_URL=https://study_schedule_lms.quangde.cloud/api
+    networks:
+      - traefik-proxy
+    labels:
+      - "traefik.enable=true"
+
+      # HTTP → redirect sang HTTPS
+      - "traefik.http.routers.lms-api.rule=Host(`study_schedule_lms.quangde.cloud`)"
+      - "traefik.http.routers.lms-api.entrypoints=web"
+      - "traefik.http.routers.lms-api.middlewares=redirect-to-https"
+
+      # HTTPS
+      - "traefik.http.routers.lms-api-ssl.rule=Host(`study_schedule_lms.quangde.cloud`)"
+      - "traefik.http.routers.lms-api-ssl.entrypoints=websecure"
+      - "traefik.http.routers.lms-api-ssl.tls=true"
+      - "traefik.http.routers.lms-api-ssl.tls.certresolver=letsencrypt"
+
+      # Port nội bộ container
+      - "traefik.http.services.lms-api.loadbalancer.server.port=5000"
+
+      # Middleware redirect HTTP → HTTPS
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+networks:
+  traefik-proxy:
+    external: true

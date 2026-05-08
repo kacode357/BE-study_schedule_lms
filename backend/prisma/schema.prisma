@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  passwordHash  String
+  fullName      String
+  role          Role     @default(STUDENT)
+  
+  // Quan hệ (Relations)
+  classesTaught   Class[]      @relation("MainTeacher")
+  schedulesTaught Schedule[]   @relation("SessionTeacher")
+  schedulesCreated Schedule[]  @relation("ScheduleCreator")
+  enrollments     Enrollment[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Class {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   // VD: "Toán Cao Cấp - Lớp A"
+  description String?
+  
+  // Giáo viên phụ trách chính
+  teacherId   String   @db.ObjectId
+  teacher     User     @relation("MainTeacher", fields: [teacherId], references: [id])
+
+  schedules   Schedule[]
+  enrollments Enrollment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Schedule {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String   // VD: "Chương 1: Đạo hàm"
+  startTime   DateTime
+  endTime     DateTime
+  location    String?  // Phòng học hoặc Link Google Meet
+  status      ScheduleStatus @default(SCHEDULED)
+  note        String?  // Ghi chú thêm nếu dời lịch
+  
+  // Thuộc về lớp nào
+  classId     String   @db.ObjectId
+  class       Class    @relation(fields: [classId], references: [id])
+
+  // Giáo viên dạy buổi này (có thể là giáo viên khác dạy thay)
+  teacherId   String   @db.ObjectId
+  teacher     User     @relation("SessionTeacher", fields: [teacherId], references: [id])
+
+  // Ai là người tạo lịch này (Admin hoặc Teacher)
+  createdById String   @db.ObjectId
+  createdBy   User     @relation("ScheduleCreator", fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Enrollment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  studentId String   @db.ObjectId
+  classId   String   @db.ObjectId
+
+  student   User  @relation(fields: [studentId], references: [id])
+  class     Class @relation(fields: [classId], references: [id])
+
+  joinedAt  DateTime @default(now())
+
+  // MongoDB không hỗ trợ @@id nhiều cột, nên ta dùng @@unique thay thế
+  @@unique([studentId, classId])
+}
