@@ -58,3 +58,6 @@ Hệ thống được thiết kế để triển khai trên **Hostinger VPS** th
 
 ## 👨‍💻 Tác giả
 **Luuka** - *Khởi tạo & Kiến trúc*
+
+---
+*Last deploy: 2026-05-08*
