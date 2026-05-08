@@ -13,10 +13,7 @@ services:
   # Study Schedule LMS API
   # -------------------------------
   lms-api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: study-schedule-lms:latest
+    image: ghcr.io/kacode357/study-schedule-lms:latest
     container_name: lms_api
     restart: unless-stopped
     environment:
