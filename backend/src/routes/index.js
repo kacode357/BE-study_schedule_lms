@@ -33,4 +33,31 @@ router.get('/ping', (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /version:
+ *   get:
+ *     summary: Thông tin phiên bản API
+ *     tags: [Health]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Thông tin version
+ *         content:
+ *           application/json:
+ *             example:
+ *               version: 1.0.2
+ *               name: Study Schedule LMS API
+ *               deployedAt: "2026-05-08T14:45:00.000Z"
+ *               env: production
+ */
+router.get('/version', (req, res) => {
+  res.json({
+    version: '1.0.2',
+    name: 'Study Schedule LMS API',
+    deployedAt: new Date().toISOString(),
+    env: process.env.NODE_ENV,
+  });
+});
+
 module.exports = router;
