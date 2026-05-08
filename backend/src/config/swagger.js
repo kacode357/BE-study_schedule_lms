@@ -5,7 +5,7 @@ const isProd = process.env.NODE_ENV === 'production';
 const servers = isProd
   ? [
     {
-      url: 'https://study_schedule_lms.quangde.cloud/api',
+      url: 'https://study-schedule-lms.quangde.cloud/api',
       description: 'Production server',
     },
   ]
@@ -15,7 +15,7 @@ const servers = isProd
       description: 'Development server',
     },
     {
-      url: 'https://study_schedule_lms.quangde.cloud/api',
+      url: 'https://study-schedule-lms.quangde.cloud/api',
       description: 'Production server',
     },
   ];
