@@ -23,8 +23,8 @@ services:
       NODE_ENV: production
       PORT: 5000
       API_URL: https://study_schedule_lms.quangde.cloud/api
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: mongodb://admin:MatKhauMongoCuaBan123!@187.127.107.215:27017/study_schedule_lms?authSource=admin
+      JWT_SECRET: 741bb07a11ea6f49d017db3e0abe7b195d0438da6ef7ccf7fe95b293da997a26
 
     networks:
       - lms_network
