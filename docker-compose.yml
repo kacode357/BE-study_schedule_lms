@@ -1,37 +1,71 @@
+# ============================================
+# Docker Compose - VPS Hostinger with Traefik
+# ============================================
+# Hướng dẫn:
+# 1. Đảm bảo Traefik đã chạy trên VPS (cổng 80, 443)
+# 2. Hostinger sẽ tự clone repo và chạy file này
+# 3. Set DATABASE_URL và JWT_SECRET trong Hostinger Panel > Environment Variables
+# ============================================
+
 services:
+
+  # -------------------------------
+  # Study Schedule LMS API
+  # -------------------------------
   lms-api:
-    image: ghcr.io/kacode357/study-schedule-lms:latest
-    container_name: lms-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: study-schedule-lms:latest
+    container_name: lms_api
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - API_URL=https://study_schedule_lms.quangde.cloud/api
+      NODE_ENV: production
+      PORT: 5000
+      API_URL: https://study_schedule_lms.quangde.cloud/api
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+
     networks:
-      - traefik-proxy
+      - lms_network
+    # KHÔNG expose port ra ngoài!
+    # Traefik truy cập app qua network nội bộ
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:5000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    # ============================================
+    # TRAEFIK LABELS - CRITICAL
+    # ============================================
     labels:
+      # Enable Traefik cho container này
       - "traefik.enable=true"
 
-      # HTTP → redirect sang HTTPS
+      # HTTP Router
       - "traefik.http.routers.lms-api.rule=Host(`study_schedule_lms.quangde.cloud`)"
       - "traefik.http.routers.lms-api.entrypoints=web"
-      - "traefik.http.routers.lms-api.middlewares=redirect-to-https"
+      - "traefik.http.routers.lms-api.service=lms-api-service"
+      - "traefik.http.routers.lms-api.middlewares=lms-redirect-https"
 
-      # HTTPS
+      # HTTPS Router
       - "traefik.http.routers.lms-api-ssl.rule=Host(`study_schedule_lms.quangde.cloud`)"
       - "traefik.http.routers.lms-api-ssl.entrypoints=websecure"
       - "traefik.http.routers.lms-api-ssl.tls=true"
       - "traefik.http.routers.lms-api-ssl.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lms-api-ssl.service=lms-api-service"
 
-      # Port nội bộ container
-      - "traefik.http.services.lms-api.loadbalancer.server.port=5000"
+      # Service - port nội bộ container
+      - "traefik.http.services.lms-api-service.loadbalancer.server.port=5000"
+      - "traefik.http.services.lms-api-service.loadbalancer.server.scheme=http"
 
-      # Middleware redirect HTTP → HTTPS
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      # Middleware: redirect HTTP → HTTPS
+      - "traefik.http.middlewares.lms-redirect-https.redirectscheme.scheme=https"
 
 networks:
-  traefik-proxy:
-    name: traefik-proxy
+  lms_network:
+    driver: bridge
