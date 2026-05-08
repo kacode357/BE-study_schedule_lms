@@ -27,6 +27,19 @@ class AuthResponse {
       role: user.role
     };
   }
+  /**
+   * Format My Profile Response Data
+   */
+  static formatProfile(user) {
+    return {
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
 }
 
 module.exports = AuthResponse;

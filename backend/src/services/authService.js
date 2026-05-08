@@ -48,6 +48,18 @@ class AuthService {
     const newUser = await db.collection('users').findOne({ _id: result.insertedId });
     return newUser;
   }
+  async getMyProfile(userId) {
+    const { ObjectId } = require('mongodb');
+    const db = getDB();
+    const user = await db.collection('users').findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { passwordHash: 0 } } // Không trả về password
+    );
+    if (!user) {
+      throw new Error(MESSAGES.AUTH.EMAIL_NOT_EXIST);
+    }
+    return user;
+  }
 }
 
 module.exports = new AuthService();
