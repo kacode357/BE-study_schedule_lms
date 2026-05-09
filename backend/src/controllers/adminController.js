@@ -4,6 +4,19 @@ const { sendVerificationEmail, sendRejectionEmail } = require("../services/email
 const ApiResponse = require("../responses/apiResponse");
 const MESSAGES = require("../constants/messages");
 
+// Format user document: _id → id
+const formatUser = (user) => ({
+  id: user._id,
+  username: user.username,
+  email: user.email,
+  full_name: user.full_name,
+  role: user.role,
+  status: user.status,
+  auth_provider: user.auth_provider,
+  avatar_url: user.avatar_url,
+  created_at: user.created_at,
+});
+
 class AdminController {
   // GET /admin/users?status=&role=&page=&limit=
   async getAllUsers(req, res) {
@@ -22,7 +35,7 @@ class AdminController {
       const total = await User.countDocuments(filter);
 
       res.status(200).json(
-        ApiResponse.success({ users, total, page: parseInt(page), limit: parseInt(limit) })
+        ApiResponse.success({ users: users.map(formatUser), total, page: parseInt(page), limit: parseInt(limit) })
       );
     } catch (error) {
       res.status(500).json(ApiResponse.errorSingle(error.message));
@@ -36,7 +49,7 @@ class AdminController {
         .select("-password -email_verify_token -email_verify_expires")
         .sort({ created_at: 1 }); // FIFO: duyệt theo thứ tự đăng ký
 
-      res.status(200).json(ApiResponse.success(users));
+      res.status(200).json(ApiResponse.success(users.map(formatUser)));
     } catch (error) {
       res.status(500).json(ApiResponse.errorSingle(error.message));
     }
