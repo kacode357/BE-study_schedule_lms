@@ -1,64 +1,97 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { getDB } = require('../config/db');
-const MESSAGES = require('../constants/messages');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const User = require("../models/userModel");
+const MESSAGES = require("../constants/messages");
+
+const generateJWT = (user) =>
+  jwt.sign(
+    { id: user._id.toString(), role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
 class AuthService {
   async login(email, password) {
-    const db = getDB();
-    const user = await db.collection('users').findOne({ email });
-    if (!user) {
-      throw new Error(MESSAGES.AUTH.EMAIL_NOT_EXIST);
+    const user = await User.findOne({ email });
+    if (!user) throw new Error(MESSAGES.AUTH.EMAIL_NOT_EXIST);
+
+    // Tài khoản Google không được đăng nhập local
+    if (user.auth_provider === "google") {
+      throw new Error(MESSAGES.AUTH.USE_GOOGLE_LOGIN);
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      throw new Error(MESSAGES.AUTH.INCORRECT_PASSWORD);
+    // Kiểm tra trạng thái tài khoản
+    if (user.status === "pending_approval") {
+      throw new Error(MESSAGES.AUTH.ACCOUNT_PENDING_APPROVAL);
+    }
+    if (user.status === "pending_email_verification") {
+      throw new Error(MESSAGES.AUTH.ACCOUNT_PENDING_EMAIL);
+    }
+    if (user.status === "rejected") {
+      throw new Error(MESSAGES.AUTH.ACCOUNT_REJECTED);
     }
 
-    const token = jwt.sign(
-      { id: user._id.toString(), role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) throw new Error(MESSAGES.AUTH.INCORRECT_PASSWORD);
 
+    const token = generateJWT(user);
     return { token, user };
   }
 
-  async register({ email, password, fullName, role }) {
-    const db = getDB();
+  async register({ username, email, password, full_name, role }) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) throw new Error(MESSAGES.AUTH.EMAIL_IN_USE);
 
-    const existingUser = await db.collection('users').findOne({ email });
-    if (existingUser) {
-      throw new Error(MESSAGES.AUTH.EMAIL_IN_USE);
-    }
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) throw new Error(MESSAGES.AUTH.USERNAME_IN_USE);
 
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const result = await db.collection('users').insertOne({
+    const newUser = await User.create({
+      username,
       email,
-      passwordHash,
-      fullName,
-      role: role || 'STUDENT',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      password: hashedPassword,
+      full_name,
+      role: role || "student",
+      status: "pending_approval",
     });
 
-    const newUser = await db.collection('users').findOne({ _id: result.insertedId });
     return newUser;
   }
+
   async getMyProfile(userId) {
-    const { ObjectId } = require('mongodb');
-    const db = getDB();
-    const user = await db.collection('users').findOne(
-      { _id: new ObjectId(userId) },
-      { projection: { passwordHash: 0 } } // Không trả về password
+    const user = await User.findById(userId).select(
+      "-password -email_verify_token -email_verify_expires"
     );
-    if (!user) {
-      throw new Error(MESSAGES.AUTH.EMAIL_NOT_EXIST);
-    }
+    if (!user) throw new Error(MESSAGES.AUTH.EMAIL_NOT_EXIST);
     return user;
+  }
+
+  /**
+   * Xác thực email qua token
+   */
+  async verifyEmail(token) {
+    const user = await User.findOne({
+      email_verify_token: token,
+      email_verify_expires: { $gt: new Date() }, // chưa hết hạn
+    });
+    if (!user) throw new Error(MESSAGES.AUTH.VERIFY_TOKEN_INVALID);
+
+    user.status = "active";
+    user.email_verify_token = null;
+    user.email_verify_expires = null;
+    await user.save();
+
+    return user;
+  }
+
+  /**
+   * Tạo token xác thực email (dùng nội bộ bởi adminService)
+   */
+  generateEmailVerifyToken() {
+    return crypto.randomBytes(32).toString("hex");
   }
 }
 

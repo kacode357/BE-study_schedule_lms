@@ -1,43 +1,44 @@
 class AuthResponse {
-  /**
-   * Format Login Response Data
-   * Strips out any unwanted info (if any) and formats exactly what FE needs.
-   */
   static formatLogin(token, user) {
     return {
       token,
       user: {
-        id: user.id,
+        id: user._id,
+        username: user.username,
         email: user.email,
-        fullName: user.fullName,
-        role: user.role
-      }
+        full_name: user.full_name,
+        role: user.role,
+        status: user.status,
+        auth_provider: user.auth_provider,
+        avatar_url: user.avatar_url,
+      },
     };
   }
 
-  /**
-   * Format Register Response Data
-   * Typically identical to login's user object without token.
-   */
   static formatRegister(user) {
     return {
-      id: user.id,
+      id: user._id,
+      username: user.username,
       email: user.email,
-      fullName: user.fullName,
-      role: user.role
+      full_name: user.full_name,
+      role: user.role,
+      status: user.status,
+      auth_provider: user.auth_provider,
+      created_at: user.created_at,
     };
   }
-  /**
-   * Format My Profile Response Data
-   */
+
   static formatProfile(user) {
     return {
       id: user._id,
+      username: user.username,
       email: user.email,
-      fullName: user.fullName,
+      full_name: user.full_name,
       role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      status: user.status,
+      auth_provider: user.auth_provider,
+      avatar_url: user.avatar_url,
+      created_at: user.created_at,
     };
   }
 }
