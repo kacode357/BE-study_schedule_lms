@@ -17,6 +17,7 @@ const defaultOrigins = [
   'http://localhost:5173',
   'https://istudy.quangde.cloud',
   'https://study-schedule-lms.quangde.cloud', // Backend domain (Swagger UI)
+  'https://admin-istudy.quangde.cloud',        // Admin panel
 ];
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
